@@ -1,48 +1,97 @@
+import seaborn as sns 
+
+# Load the titanic dataset
+titanic_data = sns.load_dataset('titanic')
+
+print("Titanic Data")
+
+
+print(titanic_data.columns) # titanic data set
+
 import pandas as pd
-import seaborn as sns
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+# Preprocess the data
 from sklearn.preprocessing import OneHotEncoder
 
-class TitanicRegression:
-    def __init__(self):
-        self.dt = DecisionTreeClassifier()
-        self.logreg = LogisticRegression()
-        self.X_train = None
-        self.X_test = None
-        self.y_train = None
-        self.y_test = None
-        self.encoder = OneHotEncoder()
+td = titanic_data
+td.drop(['alive', 'who', 'adult_male', 'class', 'embark_town', 'deck'], axis=1, inplace=True)
+td.dropna(inplace=True) # drop rows with at least one missing value, after dropping unuseful columns
+td['sex'] = td['sex'].apply(lambda x: 1 if x == 'male' else 0)
+td['alone'] = td['alone'].apply(lambda x: 1 if x == True else 0)
 
-    def initTitanic(self):
-        titanic_data = sns.load_dataset('titanic')
-        # Clean data (handle missing values, encode categorical variables, etc.)
-        # For example:
-        titanic_data.dropna(inplace=True)
-        self.X = titanic_data.drop('survived', axis=1)  # Features
-        self.y = titanic_data['survived']  # Target variable
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size=0.2)
-        self.encoder.fit(self.X_train)  # Fit the encoder on training data
-        self.X_train = self.encoder.transform(self.X_train)  # Transform training data
-        self.X_test = self.encoder.transform(self.X_test)  # Transform test data
+# Encode categorical variables
+enc = OneHotEncoder(handle_unknown='ignore')
+enc.fit(td[['embarked']])
+onehot = enc.transform(td[['embarked']]).toarray()
+cols = ['embarked_' + val for val in enc.categories_[0]]
+td[cols] = pd.DataFrame(onehot)
+td.drop(['embarked'], axis=1, inplace=True)
+td.dropna(inplace=True) # drop rows with at least one missing value, after preparing the data
 
-    def runDecisionTree(self):
-        self.dt.fit(self.X_train, self.y_train)
+print(td.columns)
 
-    def runLogisticRegression(self):
-        self.logreg.fit(self.X_train, self.y_train)
 
-    def predictSurvival(self, passenger):
-        encoded_passenger = self.encoder.transform(passenger)
-        dt_prediction = self.dt.predict(encoded_passenger)
-        logreg_prediction = self.logreg.predict(encoded_passenger)
-        # Combine or select one of the predictions as the final prediction
-        return dt_prediction, logreg_prediction
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 
-if __name__ == "__main__":
-    titanic_regression = TitanicRegression()
-    titanic_regression.initTitanic()
-    titanic_regression.runDecisionTree()
-    titanic_regression.runLogisticRegression()
-    # Now you can use predictSurvival method to make predictions
+# Split arrays or matrices into random train and test subsets.
+X = td.drop('survived', axis=1)
+y = td['survived']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Train a decision tree classifier
+dt = DecisionTreeClassifier()
+dt.fit(X_train, y_train)
+
+# Test the model
+y_pred = dt.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print('DecisionTreeClassifier Accuracy: {:.2%}'.format(accuracy))  
+
+# Train a logistic regression model
+logreg = LogisticRegression()
+logreg.fit(X_train, y_train)
+
+# Test the model
+y_pred = logreg.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print('LogisticRegression Accuracy: {:.2%}'.format(accuracy))  
+
+import numpy as np
+
+# Define a new passenger
+passenger = pd.DataFrame({
+    'name': ['Bella'],
+    'pclass': [2], # 2nd class picked as it was median, bargains are my preference, but I don't want to have poor accomodations
+    'sex': ['male'],
+    'age': [17],
+    'sibsp': [3], # I usually travel with my wife
+    'parch': [20], # currenly I have 1 child at home
+    'fare': [512.00], # median fare picked assuming it is 2nd class
+    'embarked': ['S'], # majority of passengers embarked in Southampton
+    'alone': [False] # travelling with family (spouse and child))
+})
+
+new_passenger = passenger.copy()
+
+# Preprocess the new passenger data
+new_passenger['sex'] = new_passenger['sex'].apply(lambda x: 1 if x == 'male' else 0)
+new_passenger['alone'] = new_passenger['alone'].apply(lambda x: 1 if x == True else 0)
+
+# Encode 'embarked' variable
+onehot = enc.transform(new_passenger[['embarked']]).toarray()
+cols = ['embarked_' + val for val in enc.categories_[0]]
+new_passenger[cols] = pd.DataFrame(onehot, index=new_passenger.index)
+new_passenger.drop(['name'], axis=1, inplace=True)
+new_passenger.drop(['embarked'], axis=1, inplace=True)
+
+
+# Predict the survival probability for the new passenger
+dead_proba, alive_proba = np.squeeze(logreg.predict_proba(new_passenger))
+
+# Print the survival probability
+print('Death probability: {:.2%}'.format(dead_proba))  
+print('Survival probability: {:.2%}'.format(alive_proba))
+
+
