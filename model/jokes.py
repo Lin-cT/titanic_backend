@@ -1,110 +1,107 @@
-import random
+import pandas as pd
+import seaborn as sns
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+import numpy as np
 
-jokes_data = []
-joke_list = [
-    "If you give someone a program... you will frustrate them for a day; if you teach them how to program... you will "
-    "frustrate them for a lifetime.",
-    "Q: Why did I divide sin by tan? A: Just cos.",
-    "UNIX is basically a simple operating system... but you have to be a genius to understand the simplicity.",
-    "Enter any 11-digit prime number to continue.",
-    "If at first you don't succeed; call it version 1.0.",
-    "Java programmers are some of the most materialistic people I know, very object-oriented",
-    "The oldest computer can be traced back to Adam and Eve. It was an apple but with extremely limited memory. Just "
-    "1 byte. And then everything crashed.",
-    "Q: Why did Wi-Fi and the computer get married? A: Because they had a connection",
-    "Bill Gates teaches a kindergarten class to count to ten. 1, 2, 3, 3.1, 95, 98, ME, 2000, XP, Vista, 7, 8, 10.",
-    "Q: What’s a aliens favorite computer key? A: the space bar!",
-    "There are 10 types of people in the world: those who understand binary, and those who don’t.",
-    "If it wasn't for C, we’d all be programming in BASI and OBOL.",
-    "Computers make very fast, very accurate mistakes.",
-    "Q: Why is it that programmers always confuse Halloween with Christmas? A: Because 31 OCT = 25 DEC.",
-    "Q: How many programmers does it take to change a light bulb? A: None. It’s a hardware problem.",
-    "The programmer got stuck in the shower because the instructions on the shampoo bottle said: Lather, Rinse, Repeat.",
-    "Q: What is the biggest lie in the entire universe? A: I have read and agree to the Terms and Conditions.",
-    'An SQL statement walks into a bar and sees two tables. It approaches, and asks may I join you?'
-]
 
-# Initialize jokes
-def initJokes():
-    # setup jokes into a dictionary with id, joke, haha, boohoo
-    item_id = 0
-    for item in joke_list:
-        jokes_data.append({"id": item_id, "joke": item, "haha": 0, "boohoo": 0})
-        item_id += 1
-    # prime some haha responses
-    for i in range(10):
-        id = getRandomJoke()['id']
-        addJokeHaHa(id)
-    # prime some haha responses
-    for i in range(5):
-        id = getRandomJoke()['id']
-        addJokeBooHoo(id)
-        
-# Return all jokes from jokes_data
-def getJokes():
-    return(jokes_data)
+class TitanicPredictor:
+   def __init__(self):
+       self.data = None
+       self.encoder = None
+       self.model_dt = None
+       self.model_logreg = None
+       self.X_test = None
+       self.y_test = None
+      
+   def load_data(self):
+       self.data = sns.load_dataset('titanic')
+      
+   def preprocess_data(self):
+       if self.data is None:
+           raise ValueError("Data not loaded. Call load_data() first.")
+      
+       self.data.drop(['alive', 'who', 'adult_male', 'class', 'embark_town', 'deck'], axis=1, inplace=True)
+       self.data.dropna(inplace=True)
+       self.data['sex'] = self.data['sex'].apply(lambda x: 1 if x == 'male' else 0)
+       self.data['alone'] = self.data['alone'].apply(lambda x: 1 if x == True else 0)
+      
+       self.encoder = OneHotEncoder(handle_unknown='ignore')
+       self.encoder.fit(self.data[['embarked']])
+       onehot = self.encoder.transform(self.data[['embarked']]).toarray()
+       cols = ['embarked_' + val for val in self.encoder.categories_[0]]
+       self.data[cols] = pd.DataFrame(onehot)
+       self.data.drop(['embarked'], axis=1, inplace=True)
+       self.data.dropna(inplace=True)
+      
+   def train_models(self):
+       X = self.data.drop('survived', axis=1)
+       y = self.data['survived']
+       X_train, self.X_test, y_train, self.y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+      
+       self.model_dt = DecisionTreeClassifier()
+       self.model_dt.fit(X_train, y_train)
+      
+       self.model_logreg = LogisticRegression()
+       self.model_logreg.fit(X_train, y_train)
+      
+   def evaluate_models(self):
+       if self.model_dt is None or self.model_logreg is None:
+           raise ValueError("Models not trained. Call train_models() first.")
+      
+       y_pred_dt = self.model_dt.predict(self.X_test)
+       accuracy_dt = accuracy_score(self.y_test, y_pred_dt)
+       print('DecisionTreeClassifier Accuracy: {:.2%}'.format(accuracy_dt)) 
+      
+       y_pred_logreg = self.model_logreg.predict(self.X_test)
+       accuracy_logreg = accuracy_score(self.y_test, y_pred_logreg)
+       print('LogisticRegression Accuracy: {:.2%}'.format(accuracy_logreg)) 
+  
+   def predict_survival_probability(self, new_passenger):
+       if self.model_logreg is None:
+           raise ValueError("Models not trained. Call train_models() first.")
+      
+       new_passenger['sex'] = new_passenger['sex'].apply(lambda x: 1 if x == 'male' else 0)
+       new_passenger['alone'] = new_passenger['alone'].apply(lambda x: 1 if x == True else 0)
+      
+       onehot = self.encoder.transform(new_passenger[['embarked']]).toarray()
+       cols = ['embarked_' + val for val in self.encoder.categories_[0]]
+       new_passenger[cols] = pd.DataFrame(onehot, index=new_passenger.index)
+       new_passenger.drop(['embarked'], axis=1, inplace=True)
+       new_passenger.drop(['name'], axis=1, inplace=True)
+      
+       dead_proba, alive_proba = np.squeeze(self.model_logreg.predict_proba(new_passenger))
+       print('Death probability: {:.2%}'.format(dead_proba)) 
+       print('Survival probability: {:.2%}'.format(alive_proba)) 
+       return dead_proba, alive_proba
 
-# Joke getter
-def getJoke(id):
-    return(jokes_data[id])
 
-# Return random joke from jokes_data
-def getRandomJoke():
-    return(random.choice(jokes_data))
+# Usage
+titanic_predictor = TitanicPredictor()
+titanic_predictor.load_data()
+titanic_predictor.preprocess_data()
+titanic_predictor.train_models()
+titanic_predictor.evaluate_models()
 
-# Liked joke
-def favoriteJoke():
-    best = 0
-    bestID = -1
-    for joke in getJokes():
-        if joke['haha'] > best:
-            best = joke['haha']
-            bestID = joke['id']
-    return jokes_data[bestID]
-    
-# Jeered joke
-def jeeredJoke():
-    worst = 0
-    worstID = -1
-    for joke in getJokes():
-        if joke['boohoo'] > worst:
-            worst = joke['boohoo']
-            worstID = joke['id']
-    return jokes_data[worstID]
 
-# Add to haha for requested id
-def addJokeHaHa(id):
-    jokes_data[id]['haha'] = jokes_data[id]['haha'] + 1
-    return jokes_data[id]['haha']
+# Define a new passenger
+passenger = pd.DataFrame({
+   'name': ['John Mortensen'],
+   'pclass': [2],
+   'sex': ['male'],
+   'age': [64],
+   'sibsp': [1],
+   'parch': [1],
+   'fare': [16.00],
+   'embarked': ['S'],
+   'alone': [False]
+})
 
-# Add to boohoo for requested id
-def addJokeBooHoo(id):
-    jokes_data[id]['boohoo'] = jokes_data[id]['boohoo'] + 1
-    return jokes_data[id]['boohoo']
 
-# Pretty Print joke
-def printJoke(joke):
-    print(joke['id'], joke['joke'], "\n", "haha:", joke['haha'], "\n", "boohoo:", joke['boohoo'], "\n")
+titanic_predictor.predict_survival_probability(passenger)
 
-# Number of jokes
-def countJokes():
-    return len(jokes_data)
 
-# Test Joke Model
-if __name__ == "__main__": 
-    initJokes()  # initialize jokes
-    
-    # Most likes and most jeered
-    best = favoriteJoke()
-    print("Most liked", best['haha'])
-    printJoke(best)
-    worst = jeeredJoke()
-    print("Most jeered", worst['boohoo'])
-    printJoke(worst)
-    
-    # Random joke
-    print("Random joke")
-    printJoke(getRandomJoke())
-    
-    # Count of Jokes
-    print("Jokes Count: " + str(countJokes()))
+
