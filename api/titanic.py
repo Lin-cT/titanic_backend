@@ -1,33 +1,27 @@
-
-from model.titanics import *
-from flask import Blueprint, request, jsonify, current_app, Response
-from flask_restful import api, Resource # used for REST API building
-from flask import Flask, request, jsonify
-from flask_restful import Api, Resource
+from flask import Blueprint, request, jsonify
+from flask_restful import Resource, Api
 import pandas as pd
-import numpy as np
 from sklearn.preprocessing import OneHotEncoder
+from model.titanics import TitanicPredictor
 
+titanic_api = Blueprint('titanic_api', __name__, url_prefix='/api/titanic')
+api = Api(titanic_api)
 
-
-titanic_api = Blueprint('titanic_api', __name__,
-                   url_prefix='/api/titanic')
-
+# Initialize the TitanicPredictor instance
+titanic_predictor = TitanicPredictor()
 
 class TitanicAPI(Resource):
-    class _Create(Resource):
-         def post(self):
-            try:
-                # Get passenger data from the API request
-                data = request.get_json() # get the data
-                return (jsonify()) #whatever we get function 
-              
+    def post(self):
+        try:
+            # Get passenger data from the API request
+            data = request.get_json()  # get the data as JSON
+            modified_data = pd.DataFrame(data)  # create DataFrame from JSON
+            response = titanic_predictor.predict_survival_probability(modified_data)
+            return jsonify(response)
 
-            except Exception as e:
-                return jsonify({'error': str(e)})
-            
-enc = OneHotEncoder(handle_unknown='ignore') 
+        except Exception as e:
+            return jsonify({'error': str(e)})
 
-# Assuming logreg_model and enc are already defined
-api.add_resource(TitanicAPI._Create, '/create', resource_class_args=(logreg_model, enc))
 
+# Add resource to the API
+api.add_resource(TitanicAPI, '/create')
