@@ -12,9 +12,6 @@ age_mean = 30                   # Mean age
 age_std = 10                    # Increased variability in age
 age = np.random.normal(age_mean, age_std, num_samples)
 
-# Generate binary variable for family history of depression
-family_history = np.random.choice([0, 1], size=num_samples, p=[0.7, 0.3])  # Assume 30% have family history
-
 # Adjust stress level mean and std
 stress_level_mean = 5           # Mean stress level
 stress_level_std = 2            # Increased variability in stress level
@@ -31,7 +28,7 @@ sleep_hours_std = 1             # Increased variability in daily sleep hours
 sleep_hours = np.random.normal(sleep_hours_mean, sleep_hours_std, num_samples)
 
 # Calculate probability of developing depression based on the factors
-probability = (age - age_mean) + (family_history * 10) + \
+probability = (age - age_mean) + \
               (stress_level - stress_level_mean) + (1.5 - exercise_hours) + \
               (8 - sleep_hours)
 
@@ -41,7 +38,6 @@ labels = np.where(probability > 0, 1, 0)
 # Create DataFrame
 data = pd.DataFrame({
     'Age': age,
-    'Family History of Depression': family_history,
     'Stress Level': stress_level,
     'Daily Exercise Hours': exercise_hours,
     'Daily Sleep Hours': sleep_hours,
@@ -51,3 +47,4 @@ data = pd.DataFrame({
 
 # Save DataFrame to CSV
 data.to_csv('depression_dataset.csv', index=False)
+
