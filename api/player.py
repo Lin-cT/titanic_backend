@@ -1,73 +1,52 @@
 from flask import Blueprint, request, jsonify
-from flask_restful import Api, Resource # used for REST API building
+from flask_restful import Api, Resource
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 
-from model.players import Player
-
-# Change variable name and API name and prefix
 player_api = Blueprint('player_api', __name__,
                    url_prefix='/api/players')
 
 # API docs https://flask-restful.readthedocs.io/en/latest/api.html
 api = Api(player_api)
 
-class PlayerAPI:     
-    class Action(Resource):
-        def post(self):
-            ''' Read data for json body '''
-            body = request.get_json()
-            
-            ''' Avoid garbage in, error checking '''
-            # validate name
-            name = body.get('name')
-            if name is None or len(name) < 2:
-                return {'message': f'Name is missing, or is less than 2 characters'}, 210
-            # validate uid
-            uid = body.get('uid')
-            if uid is None or len(uid) < 2:
-                return {'message': f'User ID is missing, or is less than 2 characters'}, 210
-            # look for password and tokens
-            password = body.get('password')
-            tokens = body.get('tokens')
+# Load the dataset
+data = pd.read_csv('depression_dataset.csv')
 
-            ''' #1: Key code block, setup PLAYER OBJECT '''
-            po = Player(name=name, 
-                        uid=uid,
-                        tokens=tokens)
-            
-            ''' Additional garbage error checking '''
-            # set password if provided
-            if password is not None:
-                po.set_password(password)            
-            
-            ''' #2: Key Code block to add user to database '''
-            # create player in database
-            player = po.create()
-            # success returns json of player
-            if player:
-                return jsonify(player.read())
-            # failure returns error
-            return {'message': f'Processed {name}, either a format error or User ID {uid} is duplicate'}, 210
+# Dropping 'Family History of Depression' from features
+data.drop('Family History of Depression', axis=1, inplace=True)
 
-        def get(self):
-            players = Player.query.all()    # read/extract all players from database
-            json_ready = [player.read() for player in players]  # prepare output in json
-            return jsonify(json_ready)  # jsonify creates Flask response object, more specific to APIs than json.dumps
+# Features and labels
+X = data.drop('Depression', axis=1)
+y = data['Depression']
 
-        def put(self):
-            body = request.get_json() # get the body of the request
-            uid = body.get('uid') # get the UID (Know what to reference)
-            data = body.get('data')
-            player = Player.query.get(uid) # get the player (using the uid in this case)
-            player.update(data)
-            return f"{player.read()} Updated"
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-        def delete(self):
-            body = request.get_json()
-            uid = body.get('uid')
-            player = Player.query.get(uid)
-            player.delete()
-            return f"{player.read()} Has been deleted"
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.3, random_state=42)
 
+# Train a logistic regression model
+model = LogisticRegression()
+model.fit(X_train, y_train)
 
-    # building RESTapi endpoint, method distinguishes action
-    api.add_resource(Action, '/')
+# Function to predict the probability of depression
+def predict_depression(age, stress_level, exercise_hours, sleep_hours):
+    input_data = scaler.transform([[age, stress_level, exercise_hours, sleep_hours]])
+    probability_of_depression = model.predict_proba(input_data)[:, 1][0]
+    return probability_of_depression
+
+# Take user input
+class Predict(Resource):
+    def post(self):
+        body = request.get_json()
+        age = float(body.get("age"))
+        stress_level = float(body.get("stress_level"))
+        exercise_hours = float(body.get("exercise_hours"))
+        sleep_hours = float(body.get("sleep_hours"))
+        probability_of_depression = predict_depression(age, stress_level, exercise_hours, sleep_hours)
+        return jsonify({"message": f"Based on the provided data, the probability of depression is: {probability_of_depression * 100:.2f}%"})
+
+api.add_resource(Predict, '/')
