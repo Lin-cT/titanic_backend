@@ -32,15 +32,15 @@ def predict_depression(age, stress_level, exercise_hours, sleep_hours):
     chance_of_depression = model.predict(input_data)[0]
     return chance_of_depression
 
-# Take user input
 class Predict(Resource):
     def post(self):
-        body=request.get_json()
+        body = request.get_json()
         age = float(body.get("age"))
         stress_level = float(body.get("stress"))
         daily_exercise_hours = float(body.get("exercise"))
         daily_sleep_hours = float(body.get("sleep"))
         chance_of_depression = predict_depression(age, stress_level, daily_exercise_hours, daily_sleep_hours)
-        return (jsonify(f"Based on the provided data, the chance of developing depression is: {chance_of_depression * 100:.2f}%"))
+        chance_of_depression = max(0, min(chance_of_depression, 1))  # Ensure chance_of_depression is between 0 and 1
+        return jsonify(f"Based on the provided data, the chance of developing depression is: {chance_of_depression * 100:.2f}%")
 
 api.add_resource(Predict, '/')
