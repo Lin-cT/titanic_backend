@@ -12,10 +12,9 @@ predict_api = Blueprint("predict_api", __name__,
 api = Api(predict_api)
 # Load the dataset
 
-# Take user input
 class Predict(Resource):
     def post(self):
-        body=request.get_json()
+        body = request.get_json()
         age = float(body.get("age"))
         stress_level = float(body.get("stress"))
         daily_exercise_hours = float(body.get("exercise"))
