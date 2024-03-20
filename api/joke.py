@@ -21,8 +21,13 @@ class TitanicAPI(Resource):
             titanic_predictor.preprocess_data()
             titanic_predictor.train_models()
             titanic_predictor.evaluate_models()
-            response = titanic_predictor.predict_survival_probability(pass_in)
+            dead_proba, alive_proba = titanic_predictor.predict_survival_probability(pass_in)
+            response = {
+                'dead_proba': dead_proba,  # Example probabilities, replace with actual values
+                'alive_proba': alive_proba
+            }
             return jsonify(response)
+
 
 # Add resource to the API
 api.add_resource(TitanicAPI, '/create')
