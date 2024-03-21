@@ -18,6 +18,7 @@ from api.depression import predict_api
 # database migrations
 from model.users import initUsers
 from model.players import initPlayers
+from model.jokes import initTitanic
 
 # setup App pages
 from projects.projects import app_projects # Blueprint directory import projects definition
@@ -62,6 +63,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 def generate_data():
     initUsers()
     initPlayers()
+    initTitanic()
 
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)

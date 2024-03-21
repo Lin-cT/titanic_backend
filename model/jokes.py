@@ -81,27 +81,26 @@ class TitanicPredictor:
 
 # Usage
 titanic_predictor = TitanicPredictor()
-titanic_predictor.load_data()
-titanic_predictor.preprocess_data()
-titanic_predictor.train_models()
-titanic_predictor.evaluate_models()
 
 
+def initTitanic():
+    titanic_predictor.load_data()
+    titanic_predictor.preprocess_data()
+    titanic_predictor.train_models()
+    titanic_predictor.evaluate_models()
 # Define a new passenger
-passenger = pd.DataFrame({
-   'name': ['John Mortensen'],
-   'pclass': [2],
-   'sex': ['male'],
-   'age': [64],
-   'sibsp': [1],
-   'parch': [1],
-   'fare': [16.00],
-   'embarked': ['S'],
-   'alone': [False]
-})
-
-
-titanic_predictor.predict_survival_probability(passenger)
+    passenger = pd.DataFrame({
+    'name': ['John Mortensen'],
+    'pclass': [2],
+    'sex': ['male'],
+    'age': [64],
+    'sibsp': [1],
+    'parch': [1],
+    'fare': [16.00],
+    'embarked': ['S'],
+    'alone': [False]
+    })
+    return titanic_predictor.predict_survival_probability(passenger)
 
 
 
