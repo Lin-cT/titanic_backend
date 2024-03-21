@@ -11,14 +11,14 @@ from __init__ import app, db, cors  # Definitions initialization
 
 # setup APIs
 from api.covid import covid_api # Blueprint import api definition
-from api.joke import joke_api # Blueprint import api definition
+from api.titanic import titanic_api # Blueprint import api definition
 from api.user import user_api # Blueprint import api definition
 from api.player import player_api
 from api.depression import predict_api
 # database migrations
 from model.users import initUsers
 from model.players import initPlayers
-from model.jokes import initTitanic
+from model.titanic import initTitanic
 
 # setup App pages
 from projects.projects import app_projects # Blueprint directory import projects definition
@@ -28,7 +28,7 @@ from projects.projects import app_projects # Blueprint directory import projects
 db.init_app(app)
 
 # register URIs
-app.register_blueprint(joke_api) # register api routes
+app.register_blueprint(titanic_api) # register api routes
 app.register_blueprint(covid_api) # register api routes
 app.register_blueprint(user_api) # register api routes
 app.register_blueprint(player_api)
