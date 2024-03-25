@@ -28,9 +28,12 @@ sleep_hours_std = 1             # Increased variability in daily sleep hours
 sleep_hours = np.random.normal(sleep_hours_mean, sleep_hours_std, num_samples)
 
 # Calculate probability of developing depression based on the factors
-probability = np.maximum(0, (age - age_mean) + \
-              (stress_level - stress_level_mean) + (1.5 - exercise_hours) + \
-              (8 - sleep_hours))
+stress_factor = np.maximum(0, (stress_level - 6) * 2)
+sleep_factor = np.maximum(0, (8 - sleep_hours) * 3)
+exercise_factor = np.maximum(0, (1 - exercise_hours) * 1.5)
+age_factor = np.maximum(0, age - 35)
+
+probability = (stress_factor + sleep_factor + exercise_factor + age_factor) / 30
 
 # Create DataFrame without 'Depression' column
 data = pd.DataFrame({
