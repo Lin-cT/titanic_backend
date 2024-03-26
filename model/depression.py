@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 
 class DepressionModel:
-    """A class created to predict the liklihood of depression based off of daily lifestyle
+    """A class created to predict the liklihood of depression based off of daily lifestyle.
     """
 
     # a singleton instance of TitanicModel, created to train the model only once, while using it for prediction multiple times
@@ -18,6 +18,9 @@ class DepressionModel:
 
     # an instance to initialize the DepressionModel
     def __init__(self):
+        """
+        Initializes the DepressionModel with placeholders for the model, scaler, and test data.
+        """
         # the Depression ML Model
         self.model = None
         self.scaler = None
@@ -26,6 +29,13 @@ class DepressionModel:
     
     # function to train the model using linear regression
     def train_model(self, data_path):
+        """
+        Trains the model using linear regression based on the provided dataset.
+
+        Args:
+        data_path (str): Path to the dataset containing features and labels.
+
+        """
         # Load data
         data = pd.read_csv(data_path)
         
@@ -47,7 +57,7 @@ class DepressionModel:
     # function to predict the chance of depression
     def predict_depression(self, age, stress_level, exercise_hours, sleep_hours):
         """
-        Predict the probability of depression for an individual.
+        Predicts the probability of depression for an individual based on specified lifestyle factors.
 
         Args:
         age (float): The age of the individual.
@@ -56,25 +66,26 @@ class DepressionModel:
         sleep_hours (float): The number of hours the individual sleeps per night.
 
         Returns:
-        dict: A dictionary containing probabilities of experiencing depression
+        float: Probability of experiencing depression.
         """
         if self.model is None or self.scaler is None:
             raise ValueError("Model has not been trained yet. Please train the model first.")
         
+        # Scale input data
         input_data = self.scaler.transform([[age, stress_level, exercise_hours, sleep_hours]])
+
+        # Predict depression probability
         chance_of_depression = self.model.predict(input_data)[0]
         return chance_of_depression
     
     @classmethod
     def get_instance(cls):
         """ 
-        This function retrieves and constructs the singleton instance of the DepressionModel.
-        The DepressionModel is employed for analyzing depression-related data and making predictions or assessments.
-
-        The DepressionModel does not need to be cleaned, as all data send in is already cleaned and there are no string values.
+        Retrieves the singleton instance of DepressionModel.
+        If instance doesn't exist, creates and trains it.
 
         Returns:
-            DepressionModel: The singleton instance of the DepressionModel, encompassing both data and prediction methods.
+            DepressionModel: Singleton instance of DepressionModel.
         """
         # check for instance, if it doesn't exist, create it
         if cls._instance is None:
@@ -87,15 +98,16 @@ class DepressionModel:
 depressionModel = DepressionModel()
 
 def initDepression():
-    """ Initialize the Depression Model.
-    This function is used to load the Depression Model into memory, and prepare it for prediction.
+    """ 
+    Initializes the Depression Model by loading it into memory.
     """
     depressionModel.get_instance()
 
 def testDepression():
-    """ Test the Depression Model
-    Using the DepressionModel class, we can predict the likelihood of depression based on daily lifestyle.
-    Print output of this test contains method documentation, individual data, and depression probability.
+    """ 
+    Tests the Depression Model by predicting the likelihood of depression based on daily lifestyle.
+
+    Prints method documentation, individual data, and depression probability.
     """
     # Setup data for prediction
     print(" Step 1: Define individual data for prediction:")
